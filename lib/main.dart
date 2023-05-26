@@ -3,8 +3,10 @@ import 'dart:ui';
 
 import 'package:downloads_module/constants/constants.dart';
 import 'package:downloads_module/screens/landing_page.dart';
+import 'package:downloads_module/state/download_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +57,13 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: LandingPage());
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<DownloadState>(create: (_) => DownloadState()),
+      ],
+      child: const MaterialApp(
+        home: LandingPage(),
+      ),
+    );
   }
 }
