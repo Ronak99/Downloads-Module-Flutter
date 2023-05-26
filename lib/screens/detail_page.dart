@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:downloads_module/state/download_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 
 import 'package:downloads_module/enum/download_item_type.dart';
 import 'package:downloads_module/model/download_item.dart';
+import 'package:provider/provider.dart';
 
 class DetailPage extends StatelessWidget {
   final DownloadItem item;
@@ -78,7 +80,7 @@ class DetailPage extends StatelessWidget {
         title: Text(item.title),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => Provider.of<DownloadState>(context, listen: false).onDownloadButtonTap(item: item),
             icon: const Icon(
               Icons.download,
             ),
