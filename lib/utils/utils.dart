@@ -2,7 +2,7 @@ import 'package:downloads_module/enum/download_item_type.dart';
 
 class Utils {
   static DownloadItemType deduceDownloadItemType(String url) {
-    switch (url.split('.').last) {
+    switch (getExtensionFromUrl(url)) {
       case 'mp4':
         return DownloadItemType.video;
       case 'jpg':
@@ -16,4 +16,6 @@ class Utils {
         return DownloadItemType.undetermined;
     }
   }
+
+  static String getExtensionFromUrl(String url) => url.split('.').last;
 }
