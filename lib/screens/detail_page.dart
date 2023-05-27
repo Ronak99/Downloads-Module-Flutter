@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:downloads_module/screens/widgets/download_button.dart';
 import 'package:downloads_module/state/download_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ import 'package:downloads_module/enum/download_item_type.dart';
 import 'package:downloads_module/model/download_item.dart';
 import 'package:provider/provider.dart';
 
-class DetailPage extends StatelessWidget {
+class DetailPage extends StatefulWidget {
   final DownloadItem item;
 
   const DetailPage({
@@ -25,10 +26,23 @@ class DetailPage extends StatelessWidget {
         ),
       );
 
+  @override
+  State<DetailPage> createState() => _DetailPageState();
+}
+
+class _DetailPageState extends State<DetailPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    Provider.of<DownloadState>(context, listen: false)
+        .intialize(itemUrl: widget.item.url);
+  }
+
   Widget _getView() {
-    switch (item.downloadItemType) {
+    switch (widget.item.downloadItemType) {
       case DownloadItemType.image:
-        return Image.network(item.url);
+        return Image.network(widget.item.url);
       case DownloadItemType.video:
         return Column(
           children: [
@@ -41,7 +55,7 @@ class DetailPage extends StatelessWidget {
           ],
         );
       case DownloadItemType.pdf:
-        return PDFViewer(url: item.url);
+        return PDFViewer(url: widget.item.url);
       case DownloadItemType.apk:
         return Column(
           children: [
@@ -77,14 +91,9 @@ class DetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(item.title),
+        title: Text(widget.item.title),
         actions: [
-          IconButton(
-            onPressed: () => Provider.of<DownloadState>(context, listen: false).onDownloadButtonTap(item: item),
-            icon: const Icon(
-              Icons.download,
-            ),
-          ),
+          DownloadButton(item: widget.item),
         ],
       ),
       body: _getView(),
@@ -115,9 +124,11 @@ class _PDFViewerState extends State<PDFViewer> with WidgetsBindingObserver {
     super.initState();
 
     createFileOfPdfUrl().then((f) {
-      setState(() {
-        remotePDFpath = f.path;
-      });
+      if (mounted) {
+        setState(() {
+          remotePDFpath = f.path;
+        });
+      }
     });
   }
 
