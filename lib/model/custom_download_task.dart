@@ -2,12 +2,16 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 
 class CustomDownloadTask {
   final String url;
+  final String itemId;
 
   String? taskId;
   int? progress = 0;
   DownloadTaskStatus status = DownloadTaskStatus.undefined;
 
-  CustomDownloadTask({required this.url});
+  CustomDownloadTask({
+    required this.url,
+    required this.itemId,
+  });
 
   setStatus(DownloadTaskStatus status) {
     this.status = status;

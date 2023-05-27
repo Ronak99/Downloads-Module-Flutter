@@ -36,7 +36,7 @@ class _DetailPageState extends State<DetailPage> {
     super.initState();
 
     Provider.of<DownloadState>(context, listen: false)
-        .intialize(itemUrl: widget.item.url);
+        .intialize(downloadItem: widget.item);
   }
 
   Widget _getView() {
@@ -96,7 +96,14 @@ class _DetailPageState extends State<DetailPage> {
           DownloadButton(item: widget.item),
         ],
       ),
-      body: _getView(),
+      body: Column(
+        children: [
+          _getView(),
+          Text(
+            "downloading: ${Provider.of<DownloadState>(context).currentItemDownloadTask?.url}",
+          )
+        ],
+      ),
     );
   }
 }

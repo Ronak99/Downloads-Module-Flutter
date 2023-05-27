@@ -27,7 +27,8 @@ class DownloadsBottomSheet extends StatelessWidget {
     final DownloadState downloadState =
         Provider.of<DownloadState>(context, listen: false);
 
-    CustomDownloadTask customDownloadTask = downloadState.currentDownloadTask!;
+    CustomDownloadTask customDownloadTask =
+        downloadState.currentItemDownloadTask!;
 
     Widget _optionTile({
       required DownloadsResponse response,

@@ -97,7 +97,7 @@ class DownloadButton extends StatelessWidget {
         width: 50,
         child: Center(
           child: _getView(
-            downloadTask: downloadState.currentDownloadTask,
+            downloadTask: downloadState.currentItemDownloadTask,
             context: context,
           ),
         ),

@@ -2,7 +2,9 @@ import 'package:downloads_module/model/download_item.dart';
 import 'package:downloads_module/data/raw_data.dart';
 import 'package:downloads_module/screens/downloads_page.dart';
 import 'package:downloads_module/screens/detail_page.dart';
+import 'package:downloads_module/state/download_state.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -13,6 +15,11 @@ class LandingPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Downloads Module"),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () =>
+                Provider.of<DownloadState>(context, listen: false).removeAll(),
+          ),
           IconButton(
             icon: const Icon(Icons.download),
             onPressed: () => Navigator.push(
