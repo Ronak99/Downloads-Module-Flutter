@@ -17,6 +17,7 @@ class DownloadButton extends StatelessWidget {
     required CustomDownloadTask? downloadTask,
     required BuildContext context,
   }) {
+    print("Status: $downloadTask");
     if (downloadTask == null) {
       return const Icon(Icons.download);
     } else {

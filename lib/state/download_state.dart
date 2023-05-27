@@ -23,7 +23,7 @@ class DownloadState extends ChangeNotifier {
   DownloadItem? _currentDownloadItem;
 
   CustomDownloadTask? get currentItemDownloadTask {
-    int index = getTaskIndex(itemId: _currentDownloadItem!.id);
+    int index = getTaskIndex(url: _currentDownloadItem!.url);
 
     if (index == -1) {
       return null;
@@ -32,17 +32,25 @@ class DownloadState extends ChangeNotifier {
     }
   }
 
-  int getTaskIndex({required String itemId}) {
-    return _itemDownloadTasks.indexWhere((task) => task.itemId == itemId);
+  int getTaskIndex({required String url}) {
+    return _itemDownloadTasks.indexWhere((task) => task.url == url);
   }
 
   intialize({required DownloadItem downloadItem}) async {
     _currentDownloadItem = downloadItem;
+
+    _addToItemDownloadTasks(
+      CustomDownloadTask(
+        url: downloadItem.url,
+        itemId: downloadItem.id,
+      ),
+    );
+
     List<DownloadTask>? downloadTaskList = await _loadDownloadTasks();
 
     downloadTaskList.forEach((downloadTask) {
       for (CustomDownloadTask itemDownloadTask in _itemDownloadTasks) {
-        if (downloadTask.url == downloadTask.url) {
+        if (downloadTask.url == itemDownloadTask.url) {
           itemDownloadTask.setTaskId(downloadTask.taskId);
           itemDownloadTask.setStatus(downloadTask.status);
           itemDownloadTask.setProgress(downloadTask.progress);
@@ -54,7 +62,7 @@ class DownloadState extends ChangeNotifier {
   }
 
   _addToItemDownloadTasks(CustomDownloadTask downloadTask) {
-    int index = getTaskIndex(itemId: downloadTask.itemId);
+    int index = getTaskIndex(url: downloadTask.url);
     if (index != -1) {
       _itemDownloadTasks.removeAt(index);
     }
@@ -88,6 +96,9 @@ class DownloadState extends ChangeNotifier {
         currentItemDownloadTask!.isRunning) {
       // show go to downloads, and remove from downloads options
       _handleUserAction(context);
+      return;
+    } else if (currentItemDownloadTask!.isPaused) {
+      _resumeDownload();
       return;
     } else {
       _enqueueDownload(item);
@@ -148,6 +159,23 @@ class DownloadState extends ChangeNotifier {
       FlutterDownloader.pause(taskId: currentItemDownloadTask!.taskId!);
     } catch (e) {
       throw CustomException("Error in pausing download, $e");
+    }
+  }
+
+  _resumeDownload() async {
+    try {
+      String? taskId = await FlutterDownloader.resume(
+          taskId: currentItemDownloadTask!.taskId!);
+
+      int index = _itemDownloadTasks
+          .indexWhere((e) => e.taskId == currentItemDownloadTask!.taskId!);
+      CustomDownloadTask downloadTask = _itemDownloadTasks[index];
+      downloadTask.setTaskId(taskId!);
+
+      _itemDownloadTasks.removeAt(index);
+      _itemDownloadTasks.insert(index, downloadTask);
+    } catch (e) {
+      throw CustomException("Error in resuming download, $e");
     }
   }
 
