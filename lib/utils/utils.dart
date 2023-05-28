@@ -12,6 +12,7 @@ class Utils {
         return DownloadItemType.pdf;
       case 'apk':
         return DownloadItemType.apk;
+      // If the file extension is not recognized, we simply return DownloadItemType.undetermined.
       default:
         return DownloadItemType.undetermined;
     }
