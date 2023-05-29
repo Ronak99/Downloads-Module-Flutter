@@ -1,5 +1,7 @@
+import 'package:downloads_module/state/downloads_provider.dart';
 import 'package:downloads_module/screens/landing_page.dart';
 import 'package:downloads_module/service/downloads_service.dart';
+import 'package:downloads_module/service/hive_service.dart';
 import 'package:downloads_module/state/download_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -8,6 +10,7 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true);
+  await HiveService().init();
   runApp(const MyApp());
 }
 
@@ -19,6 +22,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<DownloadState>(create: (_) => DownloadState()),
+        ChangeNotifierProvider<DownloadsProvider>(
+            create: (_) => DownloadsProvider()),
       ],
       child: const MaterialApp(
         home: DataInitializer(),
@@ -42,7 +47,6 @@ class DataInitializerState extends State<DataInitializer> {
     super.initState();
 
     _downloadState = Provider.of<DownloadState>(context, listen: false);
-
     _initializeDownloader();
   }
 
