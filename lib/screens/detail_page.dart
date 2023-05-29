@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:better_player/better_player.dart';
 import 'package:downloads_module/screens/widgets/download_button.dart';
 import 'package:downloads_module/state/download_state.dart';
 import 'package:flutter/foundation.dart';
@@ -48,9 +49,7 @@ class _DetailPageState extends State<DetailPage> {
           children: [
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: Container(
-                color: Colors.black,
-              ),
+              child: BetterPlayer.network(widget.item.url),
             ),
           ],
         );
