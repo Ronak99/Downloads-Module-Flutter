@@ -18,7 +18,9 @@ class LandingPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.delete),
             onPressed: () =>
-                Provider.of<DownloadState>(context, listen: false).removeAll(),
+                Provider.of<DownloadState>(context, listen: false).removeAll(
+              context: context,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.download),
