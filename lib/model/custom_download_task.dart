@@ -2,6 +2,8 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 
 class CustomDownloadTask {
   final String url;
+  String? fileName;
+  String? filePath;
   final String itemId;
 
   String? taskId;
@@ -23,6 +25,14 @@ class CustomDownloadTask {
 
   setTaskId(String taskId) {
     this.taskId = taskId;
+  }
+
+  setFileName(String fileName) {
+    this.fileName = fileName;
+  }
+
+  setFilePath(String filePath) {
+    this.filePath = filePath;
   }
 
   bool get isUndefined => status == DownloadTaskStatus.undefined;
