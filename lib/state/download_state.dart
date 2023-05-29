@@ -8,11 +8,14 @@ import 'package:downloads_module/model/custom_download_task.dart';
 import 'package:downloads_module/model/download_item.dart';
 import 'package:downloads_module/screens/downloads_page.dart';
 import 'package:downloads_module/screens/widgets/downloads_bottom_sheet.dart';
+import 'package:downloads_module/service/hive_service.dart';
+import 'package:downloads_module/state/downloads_provider.dart';
 import 'package:downloads_module/utils/custom_exception.dart';
 import 'package:downloads_module/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 
 class DownloadState extends ChangeNotifier {
   // port
@@ -20,10 +23,15 @@ class DownloadState extends ChangeNotifier {
   StreamSubscription? _portStateUpdates;
 
   final List<CustomDownloadTask> _itemDownloadTasks = [];
+  final List<DownloadItem> _downloadItemList = [];
+
   DownloadItem? _currentDownloadItem;
 
+  // service
+  final HiveService _hiveService = HiveService();
+
   CustomDownloadTask? get currentItemDownloadTask {
-    int index = getTaskIndex(url: _currentDownloadItem!.url);
+    int index = getTaskIndex(taskId: _currentDownloadItem!.taskId);
 
     if (index == -1) {
       return null;
@@ -32,8 +40,12 @@ class DownloadState extends ChangeNotifier {
     }
   }
 
-  int getTaskIndex({required String url}) {
-    return _itemDownloadTasks.indexWhere((task) => task.url == url);
+  int getTaskIndex({required String? taskId}) {
+    return _itemDownloadTasks.indexWhere((task) => task.taskId == taskId);
+  }
+
+  int getDownloadItemIndex({required String? taskId}) {
+    return _downloadItemList.indexWhere((item) => item.taskId == taskId);
   }
 
   intialize({required DownloadItem downloadItem}) async {
@@ -62,11 +74,21 @@ class DownloadState extends ChangeNotifier {
   }
 
   _addToItemDownloadTasks(CustomDownloadTask downloadTask) {
-    int index = getTaskIndex(url: downloadTask.url);
+    if (downloadTask.taskId == null) return;
+    int index = getTaskIndex(taskId: downloadTask.taskId);
     if (index != -1) {
       _itemDownloadTasks.removeAt(index);
     }
     _itemDownloadTasks.add(downloadTask);
+  }
+
+  _addToDownloadItemList(DownloadItem downloadItem) {
+    if (downloadItem.taskId == null) return;
+    int index = getDownloadItemIndex(taskId: downloadItem.taskId);
+    if (index != -1) {
+      _downloadItemList.removeAt(index);
+    }
+    _downloadItemList.add(downloadItem);
   }
 
   Future<List<DownloadTask>> _loadDownloadTasks() async {
@@ -82,6 +104,21 @@ class DownloadState extends ChangeNotifier {
       return externalStorageDirPath;
     } catch (e) {
       throw CustomException("findLocalPath: $e");
+    }
+  }
+
+  removeTask({required String? taskId}) async {
+    try {
+      int taskIndex = getTaskIndex(taskId: taskId);
+
+      if (taskIndex == -1) return;
+      if (_itemDownloadTasks[taskIndex].taskId == null) return;
+
+      await FlutterDownloader.remove(
+        taskId: _itemDownloadTasks[taskIndex].taskId!,
+      );
+    } catch (e) {
+      throw CustomException('removeTask: $e');
     }
   }
 
@@ -135,20 +172,29 @@ class DownloadState extends ChangeNotifier {
     try {
       String directoryPath = await _findDirectory();
 
+      String fileName = '${item.title}.${Utils.getExtensionFromUrl(item.url)}';
+
       String? taskId = await FlutterDownloader.enqueue(
         url: item.url,
         savedDir: directoryPath,
         showNotification: true,
         openFileFromNotification: false,
-        fileName: '${item.title}.${Utils.getExtensionFromUrl(item.url)}',
+        fileName: fileName,
       );
 
+      // initialized item download task and added it to the list
       CustomDownloadTask itemDownloadTask = CustomDownloadTask(
         url: item.url,
         itemId: item.id,
-      )..setTaskId(taskId!);
+      )
+        ..setTaskId(taskId!)
+        ..setFileName(fileName)
+        ..setFilePath("$directoryPath/$fileName");
 
       _addToItemDownloadTasks(itemDownloadTask);
+
+      item.setTaskId(taskId);
+      _addToDownloadItemList(item);
     } catch (e) {
       throw CustomException("onDownloadButtonTap: $e");
     }
@@ -187,7 +233,7 @@ class DownloadState extends ChangeNotifier {
     }
   }
 
-  removeAll() async {
+  removeAll({required BuildContext context}) async {
     List<DownloadTask>? taskList = await FlutterDownloader.loadTasks();
 
     if (taskList != null && taskList.isNotEmpty) {
@@ -196,7 +242,7 @@ class DownloadState extends ChangeNotifier {
       }
     }
     _itemDownloadTasks.clear();
-    print('removed all');
+    Provider.of<DownloadsProvider>(context, listen: false).removeAll();
   }
 
   _onReceiveData(data, {required BuildContext context}) async {
@@ -210,13 +256,31 @@ class DownloadState extends ChangeNotifier {
 
     DownloadTaskStatus downloadTaskStatus = DownloadTaskStatus(status!);
 
-    int index = _itemDownloadTasks.indexWhere((task) => task.taskId == id);
+    int taskIndex = getTaskIndex(taskId: id);
 
-    if (index == -1) {
+    if (taskIndex == -1) {
       return;
     }
-    _itemDownloadTasks[index].setStatus(downloadTaskStatus);
-    _itemDownloadTasks[index].setProgress(progress!);
+    _itemDownloadTasks[taskIndex].setStatus(downloadTaskStatus);
+    _itemDownloadTasks[taskIndex].setProgress(progress!);
+
+    if (downloadTaskStatus == DownloadTaskStatus.complete) {
+      int downloadItemIndex = getDownloadItemIndex(taskId: id);
+
+      if (downloadItemIndex != -1) {
+        DownloadItem downloadItem = _downloadItemList[downloadItemIndex];
+        // this will be created locally
+        _hiveService.addDownload(
+          DownloadItem(
+            id: downloadItem.id,
+            title: downloadItem.title,
+            url: downloadItem.url,
+            fileName: _itemDownloadTasks[taskIndex].fileName ?? '-',
+            savedFilePath: _itemDownloadTasks[taskIndex].filePath ?? '-',
+          ),
+        );
+      }
+    }
 
     notifyListeners();
   }
