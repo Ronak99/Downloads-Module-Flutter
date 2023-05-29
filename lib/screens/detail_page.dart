@@ -1,3 +1,4 @@
+import 'package:better_player/better_player.dart';
 import 'package:downloads_module/screens/widgets/pdf_viewer.dart';
 import 'package:flutter/material.dart';
 
@@ -23,16 +24,10 @@ class DetailPage extends StatelessWidget {
       case DownloadItemType.image:
         return Image.network(item.url);
       case DownloadItemType.video:
-        return Column(
-          children: [
-            AspectRatio(
+        return AspectRatio(
               aspectRatio: 16 / 9,
-              child: Container(
-                color: Colors.black,
-              ),
-            ),
-          ],
-        );
+              child: BetterPlayer.network(item.url),
+            );
       case DownloadItemType.pdf:
         return PDFViewer(url: item.url);
       case DownloadItemType.apk:
