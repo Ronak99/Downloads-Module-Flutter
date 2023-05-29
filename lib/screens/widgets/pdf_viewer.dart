@@ -29,9 +29,11 @@ class _PDFViewerState extends State<PDFViewer> with WidgetsBindingObserver {
     super.initState();
 
     createFileOfPdfUrl().then((f) {
-      setState(() {
-        remotePDFpath = f.path;
-      });
+      if (mounted) {
+        setState(() {
+          remotePDFpath = f.path;
+        });
+      }
     });
   }
 
