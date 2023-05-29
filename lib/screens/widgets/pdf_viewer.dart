@@ -1,16 +1,20 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
 
 class PDFViewer extends StatefulWidget {
   final String url;
+  final bool isLocal;
 
-  const PDFViewer({Key? key, required this.url}) : super(key: key);
+  const PDFViewer({
+    Key? key,
+    required this.url,
+    required this.isLocal,
+  }) : super(key: key);
 
   @override
   _PDFViewerState createState() => _PDFViewerState();
@@ -29,13 +33,15 @@ class _PDFViewerState extends State<PDFViewer> with WidgetsBindingObserver {
   void initState() {
     super.initState();
 
-    createFileOfPdfUrl().then((f) {
-      if (mounted) {
-        setState(() {
-          remotePDFpath = f.path;
-        });
-      }
-    });
+    if (!widget.isLocal) {
+      createFileOfPdfUrl().then((f) {
+        if (mounted) {
+          setState(() {
+            remotePDFpath = f.path;
+          });
+        }
+      });
+    }
   }
 
   Future<File> createFileOfPdfUrl() async {
@@ -61,53 +67,56 @@ class _PDFViewerState extends State<PDFViewer> with WidgetsBindingObserver {
     return completer.future;
   }
 
+  Widget _pdfView() => PDFView(
+        filePath: widget.isLocal ? widget.url : remotePDFpath,
+        enableSwipe: true,
+        swipeHorizontal: true,
+        autoSpacing: false,
+        pageFling: true,
+        pageSnap: true,
+        defaultPage: currentPage!,
+        fitPolicy: FitPolicy.BOTH,
+        preventLinkNavigation:
+            false, // if set to true the link is handled in flutter
+        onRender: (pages) {
+          setState(() {
+            pages = pages;
+            isReady = true;
+          });
+        },
+        onError: (error) {
+          setState(() {
+            errorMessage = error.toString();
+          });
+          print(error.toString());
+        },
+        onPageError: (page, error) {
+          setState(() {
+            errorMessage = '$page: ${error.toString()}';
+          });
+          print('$page: ${error.toString()}');
+        },
+        onViewCreated: (PDFViewController pdfViewController) {
+          _controller.complete(pdfViewController);
+        },
+        onLinkHandler: (String? uri) {
+          print('goto uri: $uri');
+        },
+        onPageChanged: (int? page, int? total) {
+          print('page change: $page/$total');
+          setState(() {
+            currentPage = page;
+          });
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
+    if (widget.isLocal) return _pdfView();
+
     return Stack(
       children: <Widget>[
-        if (remotePDFpath != null)
-          PDFView(
-            filePath: remotePDFpath,
-            enableSwipe: true,
-            swipeHorizontal: true,
-            autoSpacing: false,
-            pageFling: true,
-            pageSnap: true,
-            defaultPage: currentPage!,
-            fitPolicy: FitPolicy.BOTH,
-            preventLinkNavigation:
-                false, // if set to true the link is handled in flutter
-            onRender: (pages) {
-              setState(() {
-                pages = pages;
-                isReady = true;
-              });
-            },
-            onError: (error) {
-              setState(() {
-                errorMessage = error.toString();
-              });
-              print(error.toString());
-            },
-            onPageError: (page, error) {
-              setState(() {
-                errorMessage = '$page: ${error.toString()}';
-              });
-              print('$page: ${error.toString()}');
-            },
-            onViewCreated: (PDFViewController pdfViewController) {
-              _controller.complete(pdfViewController);
-            },
-            onLinkHandler: (String? uri) {
-              print('goto uri: $uri');
-            },
-            onPageChanged: (int? page, int? total) {
-              print('page change: $page/$total');
-              setState(() {
-                currentPage = page;
-              });
-            },
-          ),
+        if (remotePDFpath != null) _pdfView(),
         errorMessage.isEmpty
             ? remotePDFpath == null
                 ? const Center(
