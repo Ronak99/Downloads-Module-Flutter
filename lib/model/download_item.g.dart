@@ -20,15 +20,15 @@ class DownloadItemAdapter extends TypeAdapter<DownloadItem> {
       id: fields[0] as String,
       title: fields[1] as String,
       url: fields[2] as String,
-    )
-      ..savedFilePath = fields[4] as String?
-      ..fileName = fields[5] as String?;
+      savedFilePath: fields[4] as String?,
+      fileName: fields[5] as String?,
+    )..taskId = fields[6] as String?;
   }
 
   @override
   void write(BinaryWriter writer, DownloadItem obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +38,9 @@ class DownloadItemAdapter extends TypeAdapter<DownloadItem> {
       ..writeByte(4)
       ..write(obj.savedFilePath)
       ..writeByte(5)
-      ..write(obj.fileName);
+      ..write(obj.fileName)
+      ..writeByte(6)
+      ..write(obj.taskId);
   }
 
   @override
