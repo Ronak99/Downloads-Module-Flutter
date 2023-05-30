@@ -30,8 +30,8 @@ class HiveService {
 
   Future<void> removeDownload(DownloadItem downloadItem) async {
     try {
-      await Hive.openBox(downloadsBox);
-      await downloadItem.delete();
+      Box box = await Hive.openBox(downloadsBox);
+      box.delete(downloadItem.key);
     } catch (e) {
       throw CustomException("Error in removeDownload: ${e.toString()}");
     }
