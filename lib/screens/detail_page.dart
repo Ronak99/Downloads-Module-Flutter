@@ -1,4 +1,3 @@
-import 'package:better_player/better_player.dart';
 import 'package:downloads_module/screens/widgets/download_button.dart';
 import 'package:downloads_module/screens/widgets/pdf_viewer.dart';
 import 'package:downloads_module/state/download_state.dart';
@@ -8,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:downloads_module/enum/download_item_type.dart';
 import 'package:downloads_module/model/download_item.dart';
 import 'package:provider/provider.dart';
+
+import 'widgets/video_player.dart';
 
 class DetailPage extends StatefulWidget {
   final DownloadItem item;
@@ -45,16 +46,7 @@ class _DetailPageState extends State<DetailPage> {
             ? Image.file(widget.item.getFile)
             : Image.network(widget.item.url);
       case DownloadItemType.video:
-        return Column(
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: widget.item.isDownloaded
-                  ? BetterPlayer.file(widget.item.savedFilePath!)
-                  : BetterPlayer.network(widget.item.url),
-            ),
-          ],
-        );
+        return VideoPlayer(downloadItem: widget.item);
       case DownloadItemType.pdf:
         return PDFViewer(
           isLocal: widget.item.isDownloaded,
@@ -95,6 +87,8 @@ class _DetailPageState extends State<DetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("Rebuilding Detail Page");
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.item.title),
@@ -126,7 +120,7 @@ class _DetailPageState extends State<DetailPage> {
             )
           else
             Text(
-              "URL: ${Provider.of<DownloadState>(context).currentItemDownloadTask?.url}",
+              "URL: ${Provider.of<DownloadState>(context, listen: false).currentItemDownloadTask?.url}",
             )
         ],
       ),
