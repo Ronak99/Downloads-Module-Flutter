@@ -15,11 +15,21 @@ class DownloadsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  removeFromDownloads(DownloadItem downloadItem,
-      {required BuildContext context}) async {
+  removeFromDownloads(
+    String itemId, {
+    required BuildContext context,
+  }) async {
+    DownloadItem d = _downloadedItems.firstWhere((e) => e.id == itemId);
+
     Provider.of<DownloadState>(context, listen: false)
-        .removeTask(taskId: downloadItem.taskId);
-    await _hiveService.removeDownload(downloadItem);
+        .removeFromDownloads(taskId: d.taskId!);
+    await _hiveService.removeDownload(d);
+    refreshDownloads();
+  }
+
+  addToDownloads(DownloadItem downloadItem) async {
+    // this will be created locally
+    await _hiveService.addDownload(downloadItem);
     refreshDownloads();
   }
 

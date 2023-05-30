@@ -100,7 +100,7 @@ class _DetailPageState extends State<DetailPage> {
                 Navigator.pop(context);
                 await Provider.of<DownloadsProvider>(context, listen: false)
                     .removeFromDownloads(
-                  widget.item,
+                  widget.item.id,
                   context: context,
                 );
               },
