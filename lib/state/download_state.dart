@@ -9,7 +9,6 @@ import 'package:downloads_module/model/custom_download_task.dart';
 import 'package:downloads_module/model/download_item.dart';
 import 'package:downloads_module/screens/downloads_page.dart';
 import 'package:downloads_module/screens/widgets/downloads_bottom_sheet.dart';
-import 'package:downloads_module/service/hive_service.dart';
 import 'package:downloads_module/state/downloads_provider.dart';
 import 'package:downloads_module/utils/custom_exception.dart';
 import 'package:downloads_module/utils/utils.dart';
@@ -27,9 +26,6 @@ class DownloadState extends ChangeNotifier {
   final List<DownloadItem> _downloadItemList = [];
 
   DownloadItem? _currentDownloadItem;
-
-  // service
-  final HiveService _hiveService = HiveService();
 
   CustomDownloadTask? get currentItemDownloadTask {
     int index = getTaskIndex(taskId: _currentDownloadItem!.taskId);
@@ -108,21 +104,6 @@ class DownloadState extends ChangeNotifier {
     }
   }
 
-  removeTask({required String? taskId}) async {
-    try {
-      int taskIndex = getTaskIndex(taskId: taskId);
-
-      if (taskIndex == -1) return;
-      if (_itemDownloadTasks[taskIndex].taskId == null) return;
-
-      await FlutterDownloader.remove(
-        taskId: _itemDownloadTasks[taskIndex].taskId!,
-      );
-    } catch (e) {
-      throw CustomException('removeTask: $e');
-    }
-  }
-
   onDownloadButtonTap({
     required DownloadItem item,
     required BuildContext context,
@@ -159,7 +140,8 @@ class DownloadState extends ChangeNotifier {
         _cancelDownload();
         break;
       case DownloadsResponse.removeDownload:
-        // TODO: Handle this case.
+        Provider.of<DownloadsProvider>(context, listen: false)
+            .removeFromDownloads(_currentDownloadItem!.id, context: context);
         break;
     }
   }
@@ -250,6 +232,19 @@ class DownloadState extends ChangeNotifier {
     Provider.of<DownloadsProvider>(context, listen: false).removeAll();
   }
 
+  removeFromDownloads({required String taskId}) async {
+    await FlutterDownloader.remove(taskId: taskId);
+    int taskIndex = getTaskIndex(taskId: taskId);
+    if (taskIndex != -1) {
+      _itemDownloadTasks.removeAt(taskIndex);
+    }
+    int itemIndex = getDownloadItemIndex(taskId: taskId);
+    if (itemIndex != -1) {
+      _downloadItemList.removeAt(itemIndex);
+    }
+    notifyListeners();
+  }
+
   _onReceiveData(data, {required BuildContext context}) async {
     if (data == null) {
       return;
@@ -276,15 +271,15 @@ class DownloadState extends ChangeNotifier {
 
       if (downloadItemIndex != -1) {
         DownloadItem downloadItem = _downloadItemList[downloadItemIndex];
-        // this will be created locally
-        _hiveService.addDownload(
+
+        Provider.of<DownloadsProvider>(context, listen: false).addToDownloads(
           DownloadItem(
             id: downloadItem.id,
             title: downloadItem.title,
             url: downloadItem.url,
             fileName: _itemDownloadTasks[taskIndex].fileName ?? '-',
             savedFilePath: _itemDownloadTasks[taskIndex].filePath ?? '-',
-          ),
+          )..setTaskId(id!),
         );
       }
     }
