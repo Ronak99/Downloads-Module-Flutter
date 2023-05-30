@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_function_literals_in_foreach_calls
 import 'dart:async';
+import 'dart:developer';
 import 'dart:isolate';
 import 'dart:ui';
 
@@ -128,18 +129,14 @@ class DownloadState extends ChangeNotifier {
   }) async {
     if (currentItemDownloadTask == null) {
       _enqueueDownload(item);
-      return;
     } else if (currentItemDownloadTask!.isComplete ||
         currentItemDownloadTask!.isRunning) {
       // show go to downloads, and remove from downloads options
       _handleUserAction(context);
-      return;
     } else if (currentItemDownloadTask!.isPaused) {
       _resumeDownload();
-      return;
     } else {
       _enqueueDownload(item);
-      return;
     }
   }
 
@@ -210,16 +207,24 @@ class DownloadState extends ChangeNotifier {
 
   _resumeDownload() async {
     try {
-      String? taskId = await FlutterDownloader.resume(
-          taskId: currentItemDownloadTask!.taskId!);
+      String oldTaskId = currentItemDownloadTask!.taskId!;
+      String? newTaskId = await FlutterDownloader.resume(taskId: oldTaskId);
+      _currentDownloadItem!.setTaskId(newTaskId!);
 
-      int index = _itemDownloadTasks
-          .indexWhere((e) => e.taskId == currentItemDownloadTask!.taskId!);
-      CustomDownloadTask downloadTask = _itemDownloadTasks[index];
-      downloadTask.setTaskId(taskId!);
+      // remove previous task, and add new task which is just resumed
+      int oldTaskIndex = getTaskIndex(taskId: oldTaskId);
 
-      _itemDownloadTasks.removeAt(index);
-      _itemDownloadTasks.insert(index, downloadTask);
+      CustomDownloadTask downloadTask = _itemDownloadTasks[oldTaskIndex];
+      downloadTask.setTaskId(newTaskId);
+
+      _itemDownloadTasks.removeAt(oldTaskIndex);
+      _itemDownloadTasks.insert(oldTaskIndex, downloadTask);
+
+      // replace the new task id
+      int downloadItemIndex = getDownloadItemIndex(taskId: newTaskId);
+      _downloadItemList[downloadItemIndex].setTaskId(newTaskId);
+
+      notifyListeners();
     } catch (e) {
       throw CustomException("Error in resuming download, $e");
     }
@@ -257,6 +262,8 @@ class DownloadState extends ChangeNotifier {
     DownloadTaskStatus downloadTaskStatus = DownloadTaskStatus(status!);
 
     int taskIndex = getTaskIndex(taskId: id);
+
+    log("Task ID: $id | task index: $taskIndex", name: "onReceiveData");
 
     if (taskIndex == -1) {
       return;
