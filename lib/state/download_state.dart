@@ -23,7 +23,7 @@ class DownloadState extends ChangeNotifier {
   DownloadItem? _currentDownloadItem;
 
   CustomDownloadTask? get currentItemDownloadTask {
-    int index = getTaskIndex(url: _currentDownloadItem!.url);
+    int index = getTaskIndex(taskId: _currentDownloadItem!.taskId);
 
     if (index == -1) {
       return null;
@@ -32,8 +32,8 @@ class DownloadState extends ChangeNotifier {
     }
   }
 
-  int getTaskIndex({required String url}) {
-    return _itemDownloadTasks.indexWhere((task) => task.url == url);
+  int getTaskIndex({required String? taskId}) {
+    return _itemDownloadTasks.indexWhere((task) => task.taskId == taskId);
   }
 
   intialize({required DownloadItem downloadItem}) async {
@@ -62,7 +62,8 @@ class DownloadState extends ChangeNotifier {
   }
 
   _addToItemDownloadTasks(CustomDownloadTask downloadTask) {
-    int index = getTaskIndex(url: downloadTask.url);
+    if (downloadTask.taskId == null) return;
+    int index = getTaskIndex(taskId: downloadTask.taskId);
     if (index != -1) {
       _itemDownloadTasks.removeAt(index);
     }
@@ -125,7 +126,7 @@ class DownloadState extends ChangeNotifier {
         _cancelDownload();
         break;
       case DownloadsResponse.removeDownload:
-        // TODO: Handle this case.
+        removeFromDownloads();
         break;
     }
   }
@@ -149,6 +150,8 @@ class DownloadState extends ChangeNotifier {
       )..setTaskId(taskId!);
 
       _addToItemDownloadTasks(itemDownloadTask);
+
+      item.setTaskId(taskId);
     } catch (e) {
       throw CustomException("onDownloadButtonTap: $e");
     }
@@ -162,18 +165,37 @@ class DownloadState extends ChangeNotifier {
     }
   }
 
+  removeFromDownloads() async {
+    String? taskId = _currentDownloadItem!.taskId;
+    if (taskId == null) return;
+    await FlutterDownloader.remove(taskId: taskId);
+
+    int taskIndex = getTaskIndex(taskId: taskId);
+    if (taskIndex != -1) {
+      _itemDownloadTasks.removeAt(taskIndex);
+    }
+
+    notifyListeners();
+  }
+
   _resumeDownload() async {
     try {
-      String? taskId = await FlutterDownloader.resume(
-          taskId: currentItemDownloadTask!.taskId!);
+      String oldTaskId = currentItemDownloadTask!.taskId!;
+      String? newTaskId = await FlutterDownloader.resume(taskId: oldTaskId);
 
-      int index = _itemDownloadTasks
-          .indexWhere((e) => e.taskId == currentItemDownloadTask!.taskId!);
-      CustomDownloadTask downloadTask = _itemDownloadTasks[index];
-      downloadTask.setTaskId(taskId!);
+      // Assign new task id to current download item
+      _currentDownloadItem!.setTaskId(newTaskId!);
 
-      _itemDownloadTasks.removeAt(index);
-      _itemDownloadTasks.insert(index, downloadTask);
+      // remove previous task, and add new task which is just resumed
+      int oldTaskIndex = getTaskIndex(taskId: oldTaskId);
+
+      // Update the taskId of downloadTask
+      CustomDownloadTask downloadTask = _itemDownloadTasks[oldTaskIndex];
+      downloadTask.setTaskId(newTaskId);
+
+      // update itemDownloadTasks list, so as to replace the new downloadTask with the previous one
+      _itemDownloadTasks.removeAt(oldTaskIndex);
+      _itemDownloadTasks.insert(oldTaskIndex, downloadTask);
     } catch (e) {
       throw CustomException("Error in resuming download, $e");
     }
@@ -210,13 +232,13 @@ class DownloadState extends ChangeNotifier {
 
     DownloadTaskStatus downloadTaskStatus = DownloadTaskStatus(status!);
 
-    int index = _itemDownloadTasks.indexWhere((task) => task.taskId == id);
+    int taskIndex = getTaskIndex(taskId: id);
 
-    if (index == -1) {
+    if (taskIndex == -1) {
       return;
     }
-    _itemDownloadTasks[index].setStatus(downloadTaskStatus);
-    _itemDownloadTasks[index].setProgress(progress!);
+    _itemDownloadTasks[taskIndex].setStatus(downloadTaskStatus);
+    _itemDownloadTasks[taskIndex].setProgress(progress!);
 
     notifyListeners();
   }
