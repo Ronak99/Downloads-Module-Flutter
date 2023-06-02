@@ -12,7 +12,9 @@ class DownloadsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Downloads Page'),
       ),
-      body: Container(),
+      body: const Center(
+        child: Text("No Downlaods"),
+      ),
     );
   }
 }
