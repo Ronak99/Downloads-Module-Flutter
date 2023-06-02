@@ -90,14 +90,7 @@ class _DetailPageState extends State<DetailPage> {
           DownloadButton(item: widget.item),
         ],
       ),
-      body: Column(
-        children: [
-          _getView(),
-          Text(
-            "downloading: ${Provider.of<DownloadState>(context).currentItemDownloadTask?.url}",
-          )
-        ],
-      ),
+      body: _getView(),
     );
   }
 }

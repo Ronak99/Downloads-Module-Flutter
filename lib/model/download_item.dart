@@ -5,6 +5,7 @@ class DownloadItem {
   String id;
   String title;
   String url;
+  String? taskId;
   DownloadItemType downloadItemType;
 
   DownloadItem({
@@ -19,6 +20,10 @@ class DownloadItem {
       title: map['title'] ?? '',
       url: map['url'] ?? '',
     );
+  }
+
+  setTaskId(String taskId) {
+    this.taskId = taskId;
   }
 
   bool get isVideoItem => downloadItemType == DownloadItemType.video;
